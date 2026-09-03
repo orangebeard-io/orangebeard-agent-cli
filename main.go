@@ -12,8 +12,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/orangebeard-io/report-all-tests/internal/orangebeard"
+	"github.com/orangebeard-io/orangebeard-agent-cli/internal/orangebeard"
 )
+
+// version is set at build time via -ldflags "-X main.version=...".
+var version = "dev"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -27,6 +30,9 @@ func main() {
 		err = runInit(os.Args[2:])
 	case "report":
 		err = runReport(os.Args[2:])
+	case "-v", "--version", "version":
+		fmt.Println("orangebeard-report", version)
+		return
 	case "-h", "--help", "help":
 		usage()
 		return

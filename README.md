@@ -11,12 +11,25 @@ It's a thin wrapper around Orangebeard's bulk test-run import endpoint:
 
 ## Install
 
-Requires only a Go toolchain to build; the resulting binary has no runtime
-dependencies and cross-compiles to Windows/macOS/Linux.
+**Download a prebuilt binary** (no Go toolchain needed) from the
+[latest release](https://github.com/orangebeard-io/orangebeard-agent-cli/releases/latest) —
+a zero-dependency static binary for linux/darwin/windows (amd64+arm64).
+Extract the archive and put `orangebeard-report` (or `orangebeard-report.exe`
+on Windows) on your `PATH`.
+
+**Or build from source** (requires Go 1.22+):
 
 ```sh
+go install github.com/orangebeard-io/orangebeard-agent-cli@latest
+```
+
+```sh
+git clone https://github.com/orangebeard-io/orangebeard-agent-cli
+cd orangebeard-agent-cli
 go build -o orangebeard-report .
 ```
+
+Every merge to `main` cuts a new release automatically (`.github/workflows/release.yml`).
 
 ## Usage
 
@@ -114,5 +127,9 @@ cut. Explicitly deferred: a `junit` subcommand (thin wrapper around the
 pre-existing `POST /v3/test-tool/junit/import`), attachments, and
 package-manager publishing. Tracked in orangebeard-io/team-soju#4783.
 
-Distribution as a dedicated `github.com/orangebeard-io/*` repo (vendored by
-pinned git ref) is a follow-up, not yet done — see #4783.
+Distributed from [github.com/orangebeard-io/orangebeard-agent-cli](https://github.com/orangebeard-io/orangebeard-agent-cli),
+vendored by pinned git ref or a tagged release — see #4783.
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).

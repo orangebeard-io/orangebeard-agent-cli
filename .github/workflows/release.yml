@@ -1,0 +1,52 @@
+name: Release
+
+# Every merge to main gets its own release: patch version auto-bumped from
+# the latest tag, then GoReleaser cross-compiles and publishes binaries for
+# linux/darwin/windows (amd64+arm64) as a GitHub Release.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next patch version
+        id: version
+        run: |
+          latest=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          if [ -z "$latest" ]; then
+            next="v0.1.0"
+          else
+            IFS='.' read -r major minor patch <<< "${latest#v}"
+            next="v${major}.${minor}.$((patch + 1))"
+          fi
+          echo "Latest tag: ${latest:-<none>} -> next: $next"
+          echo "tag=$next" >> "$GITHUB_OUTPUT"
+
+      - name: Tag release
+        run: |
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
