@@ -9,7 +9,13 @@ It's a thin wrapper around Orangebeard's bulk test-run import endpoint:
 `POST /listener/v3/{projectName}/test-run/bulk`
 (orangebeard-io/team-soju#4781).
 
-## Install
+## Getting started
+
+Two separate things get installed: the `orangebeard-report` **CLI binary**
+(does the actual HTTP call) and the **skill** (`SKILL.md` — instructions that
+tell your coding agent when and how to use the CLI). Both are needed.
+
+### 1. Install the CLI
 
 **Download a prebuilt binary** (no Go toolchain needed) from the
 [latest release](https://github.com/orangebeard-io/orangebeard-agent-cli/releases/latest) —
@@ -31,13 +37,50 @@ go build -o orangebeard-report .
 
 Every merge to `main` cuts a new release automatically (`.github/workflows/release.yml`).
 
-## Usage
+### 2. Install the skill in your agent
+
+**Claude Code** loads skills from a `SKILL.md` file under a `skills/`
+directory — user-scoped (`~/.claude/skills/`, available in every project) or
+project-scoped (`.claude/skills/` inside one repo, shareable with your team
+via version control). Pick one:
+
+```sh
+# User-scoped — available in every project on this machine
+mkdir -p ~/.claude/skills/report-all-tests
+curl -fsSL https://raw.githubusercontent.com/orangebeard-io/orangebeard-agent-cli/main/SKILL.md \
+  -o ~/.claude/skills/report-all-tests/SKILL.md
+```
+
+```sh
+# Project-scoped — commit this so the whole team gets it
+mkdir -p .claude/skills/report-all-tests
+curl -fsSL https://raw.githubusercontent.com/orangebeard-io/orangebeard-agent-cli/main/SKILL.md \
+  -o .claude/skills/report-all-tests/SKILL.md
+```
+
+Restart Claude Code (or start a new session) and it picks up the skill
+automatically — no further registration step.
+
+**Other agents** (Copilot, Codex, etc.) don't share a common skill-loading
+mechanism. The pragmatic equivalent is pointing whatever custom-instructions
+file your agent supports (e.g. Copilot's `.github/copilot-instructions.md`)
+at this repo's `SKILL.md`, or pasting its contents in directly — the
+instructions themselves don't assume Claude Code, only the CLI they wrap.
+
+### 3. Configure your project
 
 ```sh
 # Once per project — writes .orangebeard/config.env (gitignore this: it holds a token)
 orangebeard-report init --endpoint https://my-tenant.orangebeard.app --token <project-token> --project my-project
+```
 
-# Submit a run
+### 4. Try it
+
+Ask your agent to do something and report it — e.g. *"check that the login
+page loads, then report the result with the report-all-tests skill"*. Or
+submit a document directly:
+
+```sh
 orangebeard-report report path/to/run.json
 ```
 
