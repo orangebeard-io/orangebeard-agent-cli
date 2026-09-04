@@ -82,6 +82,13 @@ instructions themselves don't assume Claude Code, only the CLI they wrap.
 orangebeard-report init --endpoint https://my-tenant.orangebeard.app --token <project-token> --project my-project
 ```
 
+Configuration is per-project, not global — run `init` again for every
+separate project/repo you want to report from. Use the **full** endpoint URL
+your Orangebeard instance gives you, including any tenant-specific path
+segment (e.g. `https://app-acc.orangebeard.io/orangebeard`, where
+`/orangebeard` identifies the tenant) — the server routes on it, so
+shortening it to a bare host will break.
+
 ### 4. Try it
 
 Ask your agent to do something and report it — e.g. *"check that the login

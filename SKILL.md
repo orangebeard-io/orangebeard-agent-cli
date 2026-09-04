@@ -32,10 +32,28 @@ the pytest listener for automatic reporting going forward").
 
 1. The `orangebeard-report` binary is built (`go build -o orangebeard-report .`
    in this repo) and on `PATH`, or invoked by its full path.
-2. `.orangebeard/config.env` exists in the target project (run
-   `orangebeard-report init --endpoint <url> --token <token> --project <name>`
-   once if not). If it's missing and you don't have the endpoint/token,
-   **ask the user** rather than guessing — do not invent credentials.
+
+2. **This project must have its own Orangebeard setup — check every time,
+   don't assume it carries over.** Configuration is per-project
+   (`.orangebeard/config.env` in the project you're currently working in),
+   so a project you configured before tells you nothing about a different
+   project. Before your first `report` call in *this* project:
+   - Check whether `.orangebeard/config.env` already exists here. If it
+     does, you're done — skip straight to reporting.
+   - If it doesn't, you must gather and store three things by running
+     `orangebeard-report init --endpoint <url> --token <token> --project <name>`
+     **before** doing anything else:
+     - **`--endpoint`** — the full base URL, exactly as the user gives it to
+       you, **including any tenant-specific path segment**. Orangebeard
+       instances can route by tenant through the URL itself (e.g.
+       `https://app-acc.orangebeard.io/orangebeard`, where `/orangebeard` is
+       the tenant, not just a path) — the server derives the tenant from
+       this, so truncating it to a bare host silently breaks routing. Ask
+       for and store the exact URL; don't reconstruct or shorten it.
+     - **`--project`** — the Orangebeard project name.
+     - **`--token`** — the project access token.
+   - **Ask the user** for whichever of these you don't already have. Never
+     invent, guess, or reuse a value from a different project's setup.
 
 ## How to report a run
 
