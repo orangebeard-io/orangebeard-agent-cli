@@ -98,6 +98,8 @@ func runInit(args []string) error {
 }
 
 func runReport(args []string) error {
+	maybeNotifyUpdate()
+
 	if len(args) != 1 {
 		return errors.New("usage: orangebeard-report report <path-to-bulk-run.json>")
 	}

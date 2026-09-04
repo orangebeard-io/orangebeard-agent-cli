@@ -37,6 +37,14 @@ go build -o orangebeard-report .
 
 Every merge to `main` cuts a new release automatically (`.github/workflows/release.yml`).
 
+`report` checks for a newer release automatically — at most once every 24h
+(tracked in a small cache file under your OS user-cache directory, not
+`.orangebeard/`), so it costs nothing on every invocation. If you're behind,
+it prints a one-line notice to stderr; it never blocks or fails the command,
+and a release binary built without a version tag (a `go build`/`go install`
+from source, i.e. `--version` prints `dev`) skips it entirely since there's
+nothing meaningful to compare.
+
 ### 2. Install the skill in your agent
 
 **Claude Code** loads skills from a `SKILL.md` file under a `skills/`
