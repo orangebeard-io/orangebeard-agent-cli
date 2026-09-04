@@ -111,7 +111,7 @@ the caller — the server mints every UUID.
 ```jsonc
 {
   "idempotencyKey": "…",                    // optional — the CLI generates one if omitted
-  "testSetName": "my-app-manual-validation", // required, static (see below)
+  "testSetName": "My App Manual Validation", // required, static (see below)
   "startTime": "2026-09-03T10:00:00Z",       // required
   "endTime": "2026-09-03T10:05:00Z",         // required
   "description": "optional",
@@ -189,7 +189,10 @@ brand-new test, not a continuation. When an agent generates this document
 across multiple sessions or runs for the "same" logical test suite:
 
 - `testSetName`, suite `name`s, and `testName`s must be **byte-identical**
-  across runs — not paraphrased, not re-derived per run.
+  across runs — not paraphrased, not re-derived per run. Plain readable
+  strings are fine (`"Manual QA Checkout"`, spaces and normal
+  capitalization included) — there's no need for dashed/kebab-case; the
+  only requirement is consistency, not a particular format.
 - **Never embed a date, time, version number, or build tag in any of these
   identity fields** — not even for a run that seems like a one-off. Doing so
   guarantees a fresh history line the moment a similar run happens again,
