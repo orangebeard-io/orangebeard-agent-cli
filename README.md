@@ -57,8 +57,11 @@ the caller — the server mints every UUID.
   "startTime": "2026-09-03T10:00:00Z",       // required
   "endTime": "2026-09-03T10:05:00Z",         // required
   "description": "optional",
-  "attributes": [{ "key": "branch", "value": "main" }],
-  "suites": [                                // optional, ordered, recursive
+  "attributes": [                            // see "Required attributes" below
+    { "key": "reference_url", "value": "…" },
+    { "key": "Agent", "value": "Claude" }
+  ],
+  "suites": [                                // at least one suite; tests never live directly on the run
     {
       "name": "Checkout",                    // required per suite
       "description": "optional",
@@ -84,6 +87,35 @@ the caller — the server mints every UUID.
   ]
 }
 ```
+
+`logLevel` is one of `DEBUG | INFO | WARN | ERROR`. `logFormat` is one of
+`PLAIN_TEXT | HTML | MARKDOWN` — use `MARKDOWN` to log source code as a
+fenced code block.
+
+### Required attributes
+
+Every run should carry these two run-level `attributes`:
+
+- **`reference_url`** — a link back to the agent session that produced this
+  run, if the environment exposes one. Omit if none exists; never fabricate
+  one.
+- **`Agent`** — an identifying value for which agent produced the run (e.g.
+  `"Claude"`, `"Copilot"`, `"Codex"`).
+
+### Documenting intent, not just outcome
+
+A run should be legible to someone who wasn't there when it ran:
+
+- Use `description` fields and/or self-evident suite/test/step naming to
+  convey what was being checked and why.
+- If a test is coded, log its source (`logFormat: "MARKDOWN"`, fenced as a
+  code block).
+- Log the expected outcome, what was observed, and the actual outcome for
+  each test/step that did real work.
+- A `FAILED` test requires at least one `logLevel: "ERROR"` log stating,
+  in terms a human can act on, what broke and why — not a bare stack trace.
+
+See `SKILL.md` for a worked example combining all of the above.
 
 ### Static-naming discipline — read this before generating a document
 
