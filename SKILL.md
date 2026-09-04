@@ -25,13 +25,37 @@ If an automated framework (pytest, jest, mvn, etc.) already has a dedicated
 Orangebeard listener **configured in this project**, let that listener report
 — don't duplicate its output through this skill.
 
-If it does **not** have one configured, that's not a reason to skip
-reporting: report the framework's results through this skill instead, so the
-run still gets recorded. In that case, **tell the user** a dedicated
-framework-specific reporter/listener exists for next time (e.g. "this project
-runs pytest but has no Orangebeard pytest listener configured — I reported
-this run through the generic bulk-import skill instead; consider setting up
-the pytest listener for automatic reporting going forward").
+If it does **not** have one configured yet, **check for a dedicated listener
+before defaulting to this skill's generic bulk-import path** — a real
+listener reports automatically from inside the framework itself (no JSON
+authoring, and it keeps covering every future run without you), which is
+strictly better than a one-off bulk-import call:
+
+1. **Look for a match** among `github.com/orangebeard-io`'s repositories for
+   the framework/tool in use. If `gh` is available and authenticated:
+   `gh api orgs/orangebeard-io/repos --paginate --jq '.[].name'`; otherwise
+   browse https://github.com/orangebeard-io?tab=repositories. Naming isn't
+   fully consistent across the org — `-listener` is most common, but
+   `-reporter`, `-logger`, and `-plugin` all appear too (e.g.
+   `junit5-listener`, `cypress-listener`, `playwright-listener`,
+   `vitest-reporter`, `bruno-reporter`, `xunit-dotnet-listener`,
+   `Ranorex-Logger`) — search by framework name, don't assume one suffix.
+2. **If a match exists, offer to set it up instead of the generic path.**
+   Tell the user a dedicated listener/reporter exists at
+   `github.com/orangebeard-io/<repo>` and ask whether they'd like it
+   installed and configured instead. If they agree, follow *that* repo's own
+   install/setup instructions — they vary per listener and aren't something
+   this skill replaces.
+3. **Only fall back to this skill's bulk-import path** if no match exists,
+   or the user prefers not to set one up right now. Either way, **tell the
+   user** what the check found (a specific listener that exists, or that
+   none was found) so they understand why the generic path was used and can
+   revisit it later (e.g. "this project runs Jest and Orangebeard publishes
+   a dedicated jest-listener at github.com/orangebeard-io/jest-listener —
+   want me to set that up instead? I can also just report this run through
+   the generic bulk-import path for now."). Don't name a specific listener
+   unless step 1 actually found it — if the framework has no match in the
+   org, say so plainly rather than guessing one might exist.
 
 ## Prerequisites
 
