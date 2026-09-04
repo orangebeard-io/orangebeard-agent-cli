@@ -52,18 +52,27 @@ directory — user-scoped (`~/.claude/skills/`, available in every project) or
 project-scoped (`.claude/skills/` inside one repo, shareable with your team
 via version control). Pick one:
 
+`SKILL.md` refers to `README.md` for the full JSON contract, so fetch both
+into the same directory — Claude Code only auto-loads `SKILL.md`'s content
+up front, but the agent can read sibling files in its own skill directory on
+demand, which is what makes that reference resolve at all:
+
 ```sh
 # User-scoped — available in every project on this machine
 mkdir -p ~/.claude/skills/report-all-tests
-curl -fsSL https://raw.githubusercontent.com/orangebeard-io/orangebeard-agent-cli/main/SKILL.md \
-  -o ~/.claude/skills/report-all-tests/SKILL.md
+for f in SKILL.md README.md; do
+  curl -fsSL "https://raw.githubusercontent.com/orangebeard-io/orangebeard-agent-cli/main/$f" \
+    -o ~/.claude/skills/report-all-tests/"$f"
+done
 ```
 
 ```sh
 # Project-scoped — commit this so the whole team gets it
 mkdir -p .claude/skills/report-all-tests
-curl -fsSL https://raw.githubusercontent.com/orangebeard-io/orangebeard-agent-cli/main/SKILL.md \
-  -o .claude/skills/report-all-tests/SKILL.md
+for f in SKILL.md README.md; do
+  curl -fsSL "https://raw.githubusercontent.com/orangebeard-io/orangebeard-agent-cli/main/$f" \
+    -o .claude/skills/report-all-tests/"$f"
+done
 ```
 
 Restart Claude Code (or start a new session) and it picks up the skill

@@ -211,5 +211,9 @@ both attributed to the agent and session that produced them:
 }
 ```
 
-See `README.md` for the complete JSON contract, config setup, and error
-handling.
+See `README.md` in this same skill directory for the complete JSON contract,
+config setup, and error handling — it's fetched alongside this file by the
+install instructions. If it isn't there (e.g. only this file was copied
+manually), fetch it from
+https://raw.githubusercontent.com/orangebeard-io/orangebeard-agent-cli/main/README.md
+or read https://github.com/orangebeard-io/orangebeard-agent-cli#readme.
