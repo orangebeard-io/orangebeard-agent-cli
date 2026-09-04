@@ -1,18 +1,20 @@
 ---
 name: report-all-tests
-description: Report manual/exploratory validation or ad-hoc test results into Orangebeard as a real, queryable test run. Use whenever you (the agent) have just finished checking something step-by-step — a browser QA pass, a manual API smoke check, an exploratory bug hunt — and the result should be recorded, not left in ephemeral chat. Also use for framework test output (pytest/jest/mvn/etc.) when that framework has no Orangebeard reporter configured in this project.
+description: Report test results into Orangebeard as a real, queryable test run — whenever tests are run in this project, not only manual/exploratory ones. Triggers on being asked to run tests, run all tests, run the test suite, or execute tests (pytest/jest/mvn/go test/etc.), as well as manual or exploratory checks (a browser QA pass, an ad-hoc API probe, a bug hunt) whose result should be recorded rather than left in ephemeral chat or terminal output. Skip only when a framework-specific Orangebeard listener/reporter is already configured in this project for that framework — let that listener report instead.
 ---
 
 # report-all-tests
 
-Coding agents that do manual/exploratory validation — step-by-step browser
-checks, ad-hoc API probes, exploratory bug hunts — normally leave no trace:
-the results live only in chat and vanish. This skill turns that work into a
-first-class Orangebeard test run with one JSON document and one CLI call.
+Test results — whether from an automated framework run or a manual/
+exploratory check — normally leave no trace beyond chat or terminal output:
+ask an agent to "run all tests" and, once it's done, the results are gone the
+moment the conversation moves on. This skill turns that into a first-class
+Orangebeard test run with one JSON document and one CLI call.
 
-Use this skill when you have just finished a round of manual or exploratory
-checks and the user would plausibly want an audit trail (e.g. "was X tested
-before this shipped?").
+**Use this skill whenever tests run in this project**, not only for manual
+work: being asked to run tests, run all tests, or run the test suite is
+itself the trigger — it doesn't require the user to separately ask for the
+results to be recorded. The one exception is covered next.
 
 ## When framework test output is involved
 
