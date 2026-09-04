@@ -77,6 +77,17 @@ the pytest listener for automatic reporting going forward").
    `testSetName` (e.g. `"manual-qa-2026-09-03"`) is fine — static naming only
    matters once you intend the *same* test to be tracked over time.
 
+   **You have no memory of what you named things last session — check
+   before you invent.** `orangebeard-report` automatically maintains
+   `.orangebeard/reported-structure.json`, a ledger of every testSetName /
+   suite path / testName this project has reported before (committed to
+   version control, unlike `config.env`). Before writing a `testSetName` or
+   suite/test name for what might be a recurring check, read that file if it
+   exists. If a close match is already there, reuse it exactly rather than
+   composing a fresh string — a plausible-looking paraphrase is exactly how
+   a history line silently breaks. If you're genuinely unsure whether this
+   is the same check as a prior entry, ask the user rather than guessing.
+
 4. **Always include three run-level attributes:**
    - `"key": "reference_url"` — a URL back to this agent session, if the
      environment exposes one (e.g. a Claude Code session link). Omit only if

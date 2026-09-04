@@ -179,6 +179,18 @@ across multiple sessions or runs for the "same" logical test suite:
   `BeforeAll`) across genuinely different instances is expected and normal —
   Orangebeard does not collapse them.
 
+#### The reported-structure ledger
+
+An agent has no memory of what it named things in a prior session, so
+"byte-identical" is hard to guarantee from intent alone. After every
+successful `report`, the CLI merges the submitted testSetName/suite-path/
+testName tree into `.orangebeard/reported-structure.json` — a per-project
+ledger of everything reported so far. Unlike `config.env` (gitignored, holds
+a token), this file has no secret in it and is meant to be **committed**, so
+every session and every teammate's agent sees the same history of exact
+names to reuse. `SKILL.md` instructs the agent to check this file before
+inventing a name for what might be a recurring check.
+
 ### Errors
 
 - **400** — the whole document was rejected; every violation is listed

@@ -11,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/orangebeard-io/orangebeard-agent-cli/internal/orangebeard"
 )
@@ -125,7 +126,27 @@ func runReport(args []string) error {
 
 	fmt.Printf("Submitted — run %s accepted and enqueued.\n", testRunUUID)
 	fmt.Println("It is not queryable yet; Orangebeard processes it asynchronously.")
+
+	recordStructure(run)
 	return nil
+}
+
+// recordStructure updates the per-project ledger of testSetName/suite-path/
+// testName strings this project has reported before (.orangebeard/reported-
+// structure.json), so a future session can reuse exact names instead of
+// re-deriving a paraphrase. Only called after a successful submission. A
+// failure here is non-fatal — the run itself was already accepted — so it's
+// reported but doesn't fail the command.
+func recordStructure(run orangebeard.BulkTestRun) {
+	idx, err := orangebeard.LoadStructureIndex(".")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "warning: could not update .orangebeard/reported-structure.json:", err)
+		return
+	}
+	orangebeard.MergeStructure(idx, run, time.Now())
+	if err := orangebeard.SaveStructureIndex(".", idx); err != nil {
+		fmt.Fprintln(os.Stderr, "warning: could not update .orangebeard/reported-structure.json:", err)
+	}
 }
 
 func describeReportError(err error) error {
