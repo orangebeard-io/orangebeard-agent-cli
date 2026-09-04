@@ -90,10 +90,18 @@ the pytest listener for automatic reporting going forward").
    what is conceptually "the same" recurring check (e.g. a smoke-test suite
    run on every deploy), reuse **byte-identical** names across runs — don't
    let a rephrase ("Checkout flow" vs "Checkout Flow") or an LLM-generated
-   variation silently start a new history line. If this is a one-off
-   exploratory session with no recurring identity, a descriptive
-   `testSetName` (e.g. `"manual-qa-2026-09-03"`) is fine — static naming only
-   matters once you intend the *same* test to be tracked over time.
+   variation silently start a new history line.
+
+   **Never bake a date, time, version number, build tag, or any other
+   run-specific detail into `testSetName`, a suite `name`, or a `testName`**
+   — not even for a run you think is a one-off. `"manual-qa-checkout-
+   2026-09-03"` or `"checkout-v2.1"` looks harmless once, but the moment you
+   (or anyone) runs a similar check again, it can no longer be recognized as
+   the same test — you've silently guaranteed a fresh history line every
+   time, which is precisely what static naming exists to prevent. Use a
+   stable, descriptive name instead (`"manual-qa-checkout"`), and put the
+   *when* in `startTime`/`endTime` (already required) or a `description` —
+   fields that are expected to vary, not identity fields.
 
    **You have no memory of what you named things last session — check
    before you invent.** `orangebeard-report` automatically maintains
@@ -150,7 +158,7 @@ both attributed to the agent and session that produced them:
 
 ```json
 {
-  "testSetName": "manual-qa-checkout-2026-09-03",
+  "testSetName": "manual-qa-checkout",
   "startTime": "2026-09-03T14:00:00Z",
   "endTime": "2026-09-03T14:12:00Z",
   "description": "Manual + scripted verification of the checkout flow after the payment-provider migration",

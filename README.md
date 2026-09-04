@@ -190,6 +190,11 @@ across multiple sessions or runs for the "same" logical test suite:
 
 - `testSetName`, suite `name`s, and `testName`s must be **byte-identical**
   across runs — not paraphrased, not re-derived per run.
+- **Never embed a date, time, version number, or build tag in any of these
+  identity fields** — not even for a run that seems like a one-off. Doing so
+  guarantees a fresh history line the moment a similar run happens again,
+  which defeats the point of static naming. That information belongs in
+  `startTime`/`endTime` or `description`, not the name.
 - `BEFORE`/`AFTER` items are the one exception: reusing the same name (e.g.
   `BeforeAll`) across genuinely different instances is expected and normal —
   Orangebeard does not collapse them.
