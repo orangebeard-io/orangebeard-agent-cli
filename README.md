@@ -9,6 +9,17 @@ It's a thin wrapper around Orangebeard's bulk test-run import endpoint:
 `POST /listener/v3/{projectName}/test-run/bulk`
 (orangebeard-io/team-soju#4781).
 
+**You can also use this as an effortless way to set up Orangebeard reporting
+in a project you haven't wired up yet.** Just ask your agent to set up
+Orangebeard reporting — the skill (`SKILL.md`) checks whether the project's
+existing test framework already has a dedicated Orangebeard listener
+published at `github.com/orangebeard-io` (jest, cypress, playwright, JUnit,
+and more) and offers to configure that instead, since a real listener
+reports automatically from inside the framework with no per-run JSON to
+author. It only falls back to this CLI when no dedicated listener exists for
+that framework — so one request gets you the right integration, not
+necessarily this one.
+
 ## Getting started
 
 Two separate things get installed: the `orangebeard-report` **CLI binary**
@@ -101,8 +112,10 @@ shortening it to a bare host will break.
 ### 4. Try it
 
 Ask your agent to do something and report it — e.g. *"check that the login
-page loads, then report the result with the report-all-tests skill"*. Or
-submit a document directly:
+page loads, then report the result with the report-all-tests skill"*. Or ask
+it to set the whole thing up for you — e.g. *"set up Orangebeard reporting
+for this project"* — and it'll find the right integration for whatever test
+framework is already here (see above). Or submit a document directly:
 
 ```sh
 orangebeard-report report path/to/run.json
