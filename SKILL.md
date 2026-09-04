@@ -32,11 +32,14 @@ authoring, and it keeps covering every future run without you), which is
 strictly better than a one-off bulk-import call:
 
 1. **Look for a match** among `github.com/orangebeard-io`'s repositories for
-   the framework/tool in use. If `gh` is available and authenticated:
-   `gh api orgs/orangebeard-io/repos --paginate --jq '.[].name'`; otherwise
-   browse https://github.com/orangebeard-io?tab=repositories. Naming isn't
-   fully consistent across the org — `-listener` is most common, but
-   `-reporter`, `-logger`, and `-plugin` all appear too (e.g.
+   the framework/tool in use. No specific tool is required — the org is
+   public, so `GET https://api.github.com/orgs/orangebeard-io/repos` (plain
+   HTTPS, no auth, no token) works with anything that can make an HTTP call
+   or browse the web: a web-fetch/browsing tool or skill, `curl`, or `gh api
+   orgs/orangebeard-io/repos --paginate --jq '.[].name'` if `gh` happens to
+   be available — none is preferred over another, use whichever you have.
+   Naming isn't fully consistent across the org — `-listener` is most
+   common, but `-reporter`, `-logger`, and `-plugin` all appear too (e.g.
    `junit5-listener`, `cypress-listener`, `playwright-listener`,
    `vitest-reporter`, `bruno-reporter`, `xunit-dotnet-listener`,
    `Ranorex-Logger`) — search by framework name, don't assume one suffix.
