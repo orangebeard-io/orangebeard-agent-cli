@@ -89,8 +89,10 @@ done
 Restart Claude Code (or start a new session) and it picks up the skill
 automatically — no further registration step.
 
-**Other agents** (Copilot, Codex, etc.) don't share a common skill-loading
-mechanism. The pragmatic equivalent is pointing whatever custom-instructions
+**Codex** can install skills using the skill installer. Run `$skill-installer https://github.com/orangebeard-io/orangebeard-agent-cli` in codex to install the cli and the report-all-tests skill.
+
+**Other agents** that don't share a common skill-loading
+mechanism: The pragmatic equivalent is pointing whatever custom-instructions
 file your agent supports (e.g. Copilot's `.github/copilot-instructions.md`)
 at this repo's `SKILL.md`, or pasting its contents in directly — the
 instructions themselves don't assume Claude Code, only the CLI they wrap.
