@@ -59,7 +59,8 @@ the caller — the server mints every UUID.
   "description": "optional",
   "attributes": [                            // see "Required attributes" below
     { "key": "reference_url", "value": "…" },
-    { "key": "Agent", "value": "Claude" }
+    { "key": "Agent", "value": "Claude" },
+    { "key": "stage", "value": "regression" }
   ],
   "suites": [                                // at least one suite; tests never live directly on the run
     {
@@ -94,13 +95,17 @@ fenced code block.
 
 ### Required attributes
 
-Every run should carry these two run-level `attributes`:
+Every run should carry these three run-level `attributes`:
 
 - **`reference_url`** — a link back to the agent session that produced this
   run, if the environment exposes one. Omit if none exists; never fabricate
   one.
 - **`Agent`** — an identifying value for which agent produced the run (e.g.
   `"Claude"`, `"Copilot"`, `"Codex"`).
+- **`stage`** — where in the process these tests ran, e.g. `"building"`
+  (mid-build checks on work in progress), `"regression"` (regression
+  testing), `"feature"` (testing one specific feature). Free-form — pick
+  whatever value best describes the moment.
 
 ### Documenting intent, not just outcome
 

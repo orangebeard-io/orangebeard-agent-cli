@@ -77,12 +77,20 @@ the pytest listener for automatic reporting going forward").
    `testSetName` (e.g. `"manual-qa-2026-09-03"`) is fine — static naming only
    matters once you intend the *same* test to be tracked over time.
 
-4. **Always include two run-level attributes:**
+4. **Always include three run-level attributes:**
    - `"key": "reference_url"` — a URL back to this agent session, if the
      environment exposes one (e.g. a Claude Code session link). Omit only if
      genuinely no such URL exists; never fabricate one.
    - `"key": "Agent"` — an identifying value for which agent produced this
      run, e.g. `"Claude"`, `"Copilot"`, `"Codex"`.
+   - `"key": "stage"` — a hint of *where in the process* these tests ran,
+     e.g. `"building"` (mid-build checks on work in progress),
+     `"regression"` (regression testing), `"feature"` (testing one specific
+     feature). Pick whatever value best describes the moment, in your own
+     words if none of the examples fit — the point is giving a reader a
+     quick sense of intent (a rough draft sanity check reads very
+     differently from a pre-release regression pass) without having to
+     infer it from context.
 
 5. **Write the JSON to a file** and run:
    ```sh
@@ -119,7 +127,8 @@ both attributed to the agent and session that produced them:
   "description": "Manual + scripted verification of the checkout flow after the payment-provider migration",
   "attributes": [
     { "key": "reference_url", "value": "https://claude.ai/code/session_01UE9nGcxRysQYL1rCAc8qP1" },
-    { "key": "Agent", "value": "Claude" }
+    { "key": "Agent", "value": "Claude" },
+    { "key": "stage", "value": "regression" }
   ],
   "suites": [
     {
