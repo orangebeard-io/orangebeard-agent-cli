@@ -120,11 +120,8 @@ strictly better than a one-off bulk-import call:
      rather than only describing it: add an `"attachments"` array to that
      log entry with `{ "attachmentRef": "<a short unique id you make up>",
      "fileName": "...", "path": "<local file path>" }`. The CLI uploads it
-     automatically after submitting the run. This requires a recent-enough
-     Orangebeard instance (orangebeard-io/team-soju#4784); if the instance
-     predates it, the CLI reports the run normally and just warns that the
-     attachment wasn't uploaded — don't treat that warning as a failed run.
-     See `README.md`'s "Attachments" section for the full field contract.
+     automatically after submitting the run. See `README.md`'s
+     "Attachments" section for the full field contract.
 
 3. **Static-naming discipline — this is the part most likely to go wrong.**
    Orangebeard's history/trend view keys on
