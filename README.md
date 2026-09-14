@@ -158,7 +158,8 @@ the caller — the server mints every UUID.
           "startTime": "…", "endTime": "…",
           "description": "optional",
           "attributes": [],
-          "logs": [{ "logTime": "…", "message": "…", "logLevel": "INFO", "logFormat": "PLAIN_TEXT" }],
+          "logs": [{ "logTime": "…", "message": "…", "logLevel": "INFO", "logFormat": "PLAIN_TEXT",
+                     "attachments": [] }],  // optional — see "Attachments" below
           "steps": [                          // optional, ordered, recursive
             { "stepName": "Fill shipping form", "status": "PASSED",
               "startTime": "…", "endTime": "…", "logs": [],
@@ -204,6 +205,44 @@ A run should be legible to someone who wasn't there when it ran:
 
 See `SKILL.md` for a worked example combining all of the above.
 
+### Attachments (screenshots, video, Playwright traces)
+
+Requires an Orangebeard instance running orangebeard-io/team-soju#4784 or
+later — see "Errors" below for what happens against an older instance.
+
+Declare a local file on any `log` entry:
+
+```jsonc
+"logs": [{
+  "logTime": "…", "message": "checkout failed", "logLevel": "ERROR",
+  "attachments": [
+    { "attachmentRef": "shot1", "fileName": "checkout-fail.png", "path": "screenshots/checkout-fail.png" }
+  ]
+}]
+```
+
+- `attachmentRef` — required, a short string you make up, **unique across
+  the whole document**. The server echoes it back so the CLI knows which
+  minted UUIDs each declared file belongs to.
+- `fileName` — required; shown if the attachment never arrives (see below).
+- `path` — required; a local filesystem path, resolved relative to the
+  CLI's working directory.
+- `contentType` — optional; guessed from the file extension if omitted.
+
+After a `report` call that declares attachments succeeds, the CLI
+automatically uploads each file via a follow-up call, using the UUIDs the
+server returned, and prints per-file success/failure. **The server holds the
+run open only for a bounded window while waiting for declared attachments**
+(not indefinitely) — if a file never arrives (upload failed, agent crashed
+before uploading, network dropped), the run finishes anyway once that window
+elapses, minus that attachment, with a warning logged server-side. A run
+that declares no attachments behaves exactly as before — no waiting, no
+behavior change.
+
+Attaching directly to a test or step (without an intermediate log) isn't
+supported through this JSON path yet — anchor the attachment to a `log`
+entry instead (e.g. the `ERROR` log describing the failure).
+
 ### Static-naming discipline — read this before generating a document
 
 Orangebeard's history/trend continuity keys on
@@ -248,6 +287,12 @@ inventing a name for what might be a recurring check.
   project — printed as-is) from a 404 that means *this Orangebeard instance
   predates the bulk-import endpoint* (printed as "this Orangebeard instance
   doesn't support bulk import yet").
+- **Declared attachments against an older server** — if the document
+  declares attachments but the response comes back in the old bare-UUID
+  shape, the run is still reported as submitted (an older server creates
+  the run fine, it just silently ignores the unrecognized `attachments`
+  field) — the CLI prints a warning that declared attachments were not
+  uploaded, instead of failing the whole command over a decode mismatch.
 
 ## Development
 

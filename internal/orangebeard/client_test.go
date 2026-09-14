@@ -39,12 +39,15 @@ func TestReport_Accepted(t *testing.T) {
 	defer srv.Close()
 
 	c := newClient(t, srv)
-	gotUUID, err := c.Report(context.Background(), testRun())
+	gotResp, err := c.Report(context.Background(), testRun())
 	if err != nil {
 		t.Fatalf("Report() error = %v, want nil", err)
 	}
-	if gotUUID != wantUUID {
-		t.Errorf("Report() uuid = %q, want %q", gotUUID, wantUUID)
+	if gotResp.TestRunUUID != wantUUID {
+		t.Errorf("Report() testRunUUID = %q, want %q", gotResp.TestRunUUID, wantUUID)
+	}
+	if len(gotResp.Attachments) != 0 {
+		t.Errorf("Report() attachments = %v, want none (request declared no attachments)", gotResp.Attachments)
 	}
 	if want := "/listener/v3/my-project/test-run/bulk"; gotPath != want {
 		t.Errorf("request path = %q, want %q", gotPath, want)
@@ -196,6 +199,79 @@ func TestReport_PreservesCallerSuppliedIdempotencyKey(t *testing.T) {
 	}
 	if gotBody.IdempotencyKey != "caller-chosen-key" {
 		t.Errorf("IdempotencyKey = %q, want %q (caller-supplied key must survive untouched)", gotBody.IdempotencyKey, "caller-chosen-key")
+	}
+}
+
+func testRunWithAttachment(ref string) BulkTestRun {
+	run := testRun()
+	run.Suites = []Suite{{
+		Name: "Checkout",
+		Tests: []Test{{
+			TestName: "Guest checkout fails",
+			Status:   "FAILED",
+			Logs: []Log{{
+				LogTime:  "2026-09-03T10:01:00Z",
+				Message:  "screenshot of failure",
+				LogLevel: "ERROR",
+				Attachments: []AttachmentRef{
+					{AttachmentRef: ref, FileName: "fail.png", Path: "testdata/fail.png"},
+				},
+			}},
+		}},
+	}}
+	return run
+}
+
+func TestReport_WithAttachments_DecodesObjectResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"testRunUUID": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+			"attachments": []map[string]string{
+				{"attachmentRef": "shot1", "testUUID": "test-uuid", "logUUID": "log-uuid"},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	c := newClient(t, srv)
+	resp, err := c.Report(context.Background(), testRunWithAttachment("shot1"))
+	if err != nil {
+		t.Fatalf("Report() error = %v, want nil", err)
+	}
+	if len(resp.Attachments) != 1 {
+		t.Fatalf("Report() attachments = %v, want 1 entry", resp.Attachments)
+	}
+	if resp.Attachments[0].LogUUID != "log-uuid" {
+		t.Errorf("Attachments[0].LogUUID = %q, want %q", resp.Attachments[0].LogUUID, "log-uuid")
+	}
+	if resp.Attachments[0].TestUUID != "test-uuid" {
+		t.Errorf("Attachments[0].TestUUID = %q, want %q", resp.Attachments[0].TestUUID, "test-uuid")
+	}
+}
+
+func TestReport_WithAttachments_OldServer_ReturnsErrAttachmentsNotSupported(t *testing.T) {
+	wantUUID := "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		// Old, pre-attachment servers respond with a bare JSON string; the
+		// run was still created, it's just the attachment field that was
+		// silently ignored.
+		_ = json.NewEncoder(w).Encode(wantUUID)
+	}))
+	defer srv.Close()
+
+	c := newClient(t, srv)
+	resp, err := c.Report(context.Background(), testRunWithAttachment("shot1"))
+	if err != ErrAttachmentsNotSupported {
+		t.Fatalf("Report() error = %v, want ErrAttachmentsNotSupported", err)
+	}
+	// The recovered testRunUUID must survive the error, not be discarded —
+	// the run really was created server-side.
+	if resp == nil || resp.TestRunUUID != wantUUID {
+		t.Errorf("Report() response = %+v, want TestRunUUID = %q recovered despite the error", resp, wantUUID)
 	}
 }
 

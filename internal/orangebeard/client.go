@@ -17,6 +17,11 @@ import (
 // an unknown project), which surfaces as *UnexpectedStatusError instead.
 var ErrNotSupported = fmt.Errorf("this Orangebeard instance doesn't support bulk import yet")
 
+// ErrAttachmentsNotSupported means the request declared attachments but the
+// server responded with the pre-attachment bare-testRunUUID shape — this
+// Orangebeard instance's bulk endpoint predates attachment support.
+var ErrAttachmentsNotSupported = fmt.Errorf("this Orangebeard instance's bulk endpoint predates attachment support")
+
 // ValidationError is a single violation found while validating a submitted
 // document, as returned in a 400 response's validationErrors array.
 type ValidationError struct {
@@ -70,29 +75,31 @@ type Client struct {
 }
 
 // Report submits a full test run in one call and returns the resulting
-// testRunUUID. A 201 means the run was validated and enqueued — not that it
-// has finished processing.
+// BulkImportResponse. A 201 means the run was validated and enqueued — not
+// that it has finished processing. Attachments is only populated when run
+// declared at least one; otherwise the server's response is (and stays)
+// today's bare testRunUUID string.
 //
 // If run.IdempotencyKey is empty, Report generates one so a retry after a
 // dropped response reuses the same key instead of risking a duplicate run.
-func (c *Client) Report(ctx context.Context, run BulkTestRun) (string, error) {
+func (c *Client) Report(ctx context.Context, run BulkTestRun) (*BulkImportResponse, error) {
 	if run.IdempotencyKey == "" {
 		key, err := newIdempotencyKey()
 		if err != nil {
-			return "", fmt.Errorf("generating idempotency key: %w", err)
+			return nil, fmt.Errorf("generating idempotency key: %w", err)
 		}
 		run.IdempotencyKey = key
 	}
 
 	body, err := json.Marshal(run)
 	if err != nil {
-		return "", fmt.Errorf("encoding request body: %w", err)
+		return nil, fmt.Errorf("encoding request body: %w", err)
 	}
 
 	target := fmt.Sprintf("%s/listener/v3/%s/test-run/bulk", c.Endpoint, url.PathEscape(c.Project))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, target, bytes.NewReader(body))
 	if err != nil {
-		return "", fmt.Errorf("building request: %w", err)
+		return nil, fmt.Errorf("building request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+c.Token)
 	req.Header.Set("Content-Type", "application/json")
@@ -103,22 +110,18 @@ func (c *Client) Report(ctx context.Context, run BulkTestRun) (string, error) {
 	}
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("calling %s: %w", target, err)
+		return nil, fmt.Errorf("calling %s: %w", target, err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("reading response: %w", err)
+		return nil, fmt.Errorf("reading response: %w", err)
 	}
 
 	switch resp.StatusCode {
 	case http.StatusCreated:
-		var testRunUUID string
-		if err := json.Unmarshal(respBody, &testRunUUID); err != nil {
-			return "", fmt.Errorf("decoding testRunUUID: %w", err)
-		}
-		return testRunUUID, nil
+		return decodeBulkImportResponse(respBody, hasAttachments(run))
 
 	case http.StatusBadRequest:
 		var payload struct {
@@ -126,24 +129,53 @@ func (c *Client) Report(ctx context.Context, run BulkTestRun) (string, error) {
 			ValidationErrors []ValidationError `json:"validationErrors"`
 		}
 		if err := json.Unmarshal(respBody, &payload); err != nil {
-			return "", fmt.Errorf("decoding validation error response: %w", err)
+			return nil, fmt.Errorf("decoding validation error response: %w", err)
 		}
-		return "", &ValidationFailedError{Message: payload.Message, ValidationErrors: payload.ValidationErrors}
+		return nil, &ValidationFailedError{Message: payload.Message, ValidationErrors: payload.ValidationErrors}
 
 	case http.StatusConflict:
 		msg, _ := errorResponseMessage(respBody)
-		return "", &ConflictError{Message: msg}
+		return nil, &ConflictError{Message: msg}
 
 	case http.StatusNotFound:
 		if msg, ok := errorResponseMessage(respBody); ok {
-			return "", &UnexpectedStatusError{StatusCode: http.StatusNotFound, Message: msg}
+			return nil, &UnexpectedStatusError{StatusCode: http.StatusNotFound, Message: msg}
 		}
-		return "", ErrNotSupported
+		return nil, ErrNotSupported
 
 	default:
 		msg, _ := errorResponseMessage(respBody)
-		return "", &UnexpectedStatusError{StatusCode: resp.StatusCode, Message: msg}
+		return nil, &UnexpectedStatusError{StatusCode: resp.StatusCode, Message: msg}
 	}
+}
+
+// decodeBulkImportResponse decodes a 201 body. When the request declared no
+// attachments, the server responds with a bare JSON string (today's
+// unchanged shape). When it declared attachments, the server responds with
+// the structured object; a bare-string body in that case means this
+// instance's bulk endpoint predates attachment support — the run was still
+// created (an old server just ignores the unrecognized "attachments"
+// field), so this returns the recovered TestRunUUID alongside the error
+// rather than discarding it, letting the caller report the submission
+// accurately and only treat the attachment step as unavailable.
+func decodeBulkImportResponse(body []byte, expectAttachments bool) (*BulkImportResponse, error) {
+	if !expectAttachments {
+		var testRunUUID string
+		if err := json.Unmarshal(body, &testRunUUID); err != nil {
+			return nil, fmt.Errorf("decoding testRunUUID: %w", err)
+		}
+		return &BulkImportResponse{TestRunUUID: testRunUUID}, nil
+	}
+
+	var resp BulkImportResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		var probe string
+		if json.Unmarshal(body, &probe) == nil {
+			return &BulkImportResponse{TestRunUUID: probe}, ErrAttachmentsNotSupported
+		}
+		return nil, fmt.Errorf("decoding bulk import response: %w", err)
+	}
+	return &resp, nil
 }
 
 // errorResponseMessage reports whether body matches Orangebeard's standard
