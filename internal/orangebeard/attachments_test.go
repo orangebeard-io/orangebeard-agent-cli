@@ -123,7 +123,7 @@ func TestUploadAttachments_Success(t *testing.T) {
 	run := testRunWithAttachment("shot1")
 	run.Suites[0].Tests[0].Logs[0].Attachments[0].Path = path
 
-	var gotPath, gotAuth, gotJSON, gotFileContent string
+	var gotPath, gotAuth, gotJSON, gotFileContent, gotFilename string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotAuth = r.Header.Get("Authorization")
@@ -131,10 +131,11 @@ func TestUploadAttachments_Success(t *testing.T) {
 			t.Fatalf("ParseMultipartForm: %v", err)
 		}
 		gotJSON = r.FormValue("json")
-		f, _, err := r.FormFile("attachment")
+		f, header, err := r.FormFile("attachment")
 		if err != nil {
 			t.Fatalf("FormFile: %v", err)
 		}
+		gotFilename = header.Filename
 		defer f.Close()
 		buf := make([]byte, 64)
 		n, _ := f.Read(buf)
@@ -172,6 +173,12 @@ func TestUploadAttachments_Success(t *testing.T) {
 	}
 	if gotFileContent != "fake-png-bytes" {
 		t.Errorf("uploaded file content = %q, want %q", gotFileContent, "fake-png-bytes")
+	}
+	// Declared FileName is "fail.png" but the local path's basename is
+	// "shot.png" (a temp file) - the multipart filename must follow the
+	// declared name, not leak the local path's basename.
+	if gotFilename != "fail.png" {
+		t.Errorf("uploaded multipart filename = %q, want %q", gotFilename, "fail.png")
 	}
 }
 

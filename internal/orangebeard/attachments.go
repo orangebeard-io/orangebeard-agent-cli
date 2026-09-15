@@ -197,7 +197,7 @@ func (c *Client) uploadAttachment(ctx context.Context, p pendingAttachment) erro
 			if contentType == "" {
 				contentType = mimeTypeFor(p.FileName)
 			}
-			part, err := createFormFile(writer, "attachment", filepath.Base(p.Path), contentType)
+			part, err := createFormFile(writer, "attachment", p.FileName, contentType)
 			if err != nil {
 				return err
 			}
