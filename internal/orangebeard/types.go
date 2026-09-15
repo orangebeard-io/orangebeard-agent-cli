@@ -10,10 +10,24 @@ type Attribute struct {
 
 // Log is a single log line attached to a test or step.
 type Log struct {
-	LogTime   string `json:"logTime"`
-	Message   string `json:"message"`
-	LogLevel  string `json:"logLevel,omitempty"`
-	LogFormat string `json:"logFormat,omitempty"`
+	LogTime     string          `json:"logTime"`
+	Message     string          `json:"message"`
+	LogLevel    string          `json:"logLevel,omitempty"`
+	LogFormat   string          `json:"logFormat,omitempty"`
+	Attachments []AttachmentRef `json:"attachments,omitempty"`
+}
+
+// AttachmentRef declares a local file to be uploaded as an attachment to
+// this log once the bulk call returns. AttachmentRef must be unique across
+// the whole document — the server echoes it back in the response so the
+// client can correlate the declaration with the minted testUUID/stepUUID/
+// logUUID it needs for the follow-up /attachment call. Path is only
+// meaningful to the client; the server ignores it.
+type AttachmentRef struct {
+	AttachmentRef string `json:"attachmentRef"`
+	FileName      string `json:"fileName"`
+	Path          string `json:"path"`
+	ContentType   string `json:"contentType,omitempty"`
 }
 
 // Step is a single step within a test, optionally nested under parent steps.
@@ -58,4 +72,23 @@ type BulkTestRun struct {
 	Description    string      `json:"description,omitempty"`
 	Attributes     []Attribute `json:"attributes,omitempty"`
 	Suites         []Suite     `json:"suites,omitempty"`
+}
+
+// BulkImportResponse is the bulk-import endpoint's 201 response. Attachments
+// is only populated when the request declared at least one; when the
+// request declared none, the server's response is (and stays) a bare JSON
+// string, which Report decodes into TestRunUUID directly.
+type BulkImportResponse struct {
+	TestRunUUID string             `json:"testRunUUID"`
+	Attachments []AttachmentTarget `json:"attachments,omitempty"`
+}
+
+// AttachmentTarget is the server's echo of one declared AttachmentRef,
+// carrying the minted UUIDs a follow-up /attachment call needs. StepUUID is
+// only set when the log's parent is a step rather than a test directly.
+type AttachmentTarget struct {
+	AttachmentRef string `json:"attachmentRef"`
+	TestUUID      string `json:"testUUID"`
+	StepUUID      string `json:"stepUUID,omitempty"`
+	LogUUID       string `json:"logUUID"`
 }

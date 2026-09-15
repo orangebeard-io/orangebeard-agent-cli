@@ -121,15 +121,55 @@ func runReport(args []string) error {
 	}
 
 	client := &orangebeard.Client{Endpoint: cfg.Endpoint, Token: cfg.Token, Project: cfg.Project}
-	testRunUUID, err := client.Report(context.Background(), run)
-	if err != nil {
+	ctx := context.Background()
+	resp, err := client.Report(ctx, run)
+	// ErrAttachmentsNotSupported is the one Report error that still carries a
+	// usable response: the run itself was created (an old server just
+	// ignores the unrecognized "attachments" field) — only the attachment
+	// upload step is unavailable, so the submission is reported as a
+	// success and attachments are skipped below instead of aborting.
+	if err != nil && !errors.Is(err, orangebeard.ErrAttachmentsNotSupported) {
 		return describeReportError(err)
 	}
 
-	fmt.Printf("Submitted — run %s accepted and enqueued.\n", testRunUUID)
+	fmt.Printf("Submitted — run %s accepted and enqueued.\n", resp.TestRunUUID)
 	fmt.Println("It is not queryable yet; Orangebeard processes it asynchronously.")
 
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "warning:", err, "— declared attachments were not uploaded.")
+	} else if uerr := uploadAttachments(ctx, client, run, resp); uerr != nil {
+		fmt.Fprintln(os.Stderr, "warning: could not upload attachments:", uerr)
+	}
+
 	recordStructure(run)
+	return nil
+}
+
+// uploadAttachments uploads every attachment the run declared and reports
+// per-file success/failure. It's always safe to call — a run with nothing
+// declared just does nothing. The run itself was already accepted by the
+// time this runs, so an upload failure here is reported but doesn't fail
+// the command.
+func uploadAttachments(ctx context.Context, client *orangebeard.Client, run orangebeard.BulkTestRun, resp *orangebeard.BulkImportResponse) error {
+	results, err := client.UploadAttachments(ctx, run, resp)
+	if err != nil {
+		return err
+	}
+	if len(results) == 0 {
+		return nil
+	}
+
+	failed := 0
+	for _, r := range results {
+		if r.Err != nil {
+			failed++
+			fmt.Fprintf(os.Stderr, "warning: attachment %q (%s) failed to upload: %v\n", r.FileName, r.AttachmentRef, r.Err)
+		} else {
+			fmt.Printf("Uploaded attachment %q.\n", r.FileName)
+		}
+	}
+	fmt.Printf("%d/%d attachment(s) uploaded.\n", len(results)-failed, len(results))
+	fmt.Println("The server holds the run open only briefly for declared attachments — one that never arrives is dropped with a server-side warning, not a hard failure.")
 	return nil
 }
 
